@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB01000000000000000000A3 /* VoiceSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01000000000000000000A2 /* VoiceSessionViewModel.swift */; };
+		AB01000000000000000000A5 /* VoiceSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01000000000000000000A4 /* VoiceSessionView.swift */; };
 		05814DEA5DE4690F730B1E15 /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931EC010A2D940B0E42287A4 /* InsightsViewModel.swift */; };
 		26AB000000000000000000B1 /* ProvidersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26AB000000000000000000F1 /* ProvidersViewModel.swift */; };
 		26AB000000000000000000B2 /* ProvidersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26AB000000000000000000F2 /* ProvidersView.swift */; };
@@ -574,6 +576,8 @@
 		C0DE512E0000000000000203 /* InsightsRows.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsRows.swift; sourceTree = "<group>"; };
 		5DA59130ED4141049177576C /* SlashCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlashCommand.swift; sourceTree = "<group>"; };
 		6809B8F1391248A4AA77C453 /* SlashCommandExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlashCommandExecutorTests.swift; sourceTree = "<group>"; };
+		AB01000000000000000000A2 /* VoiceSessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSessionViewModel.swift; sourceTree = "<group>"; };
+		AB01000000000000000000A4 /* VoiceSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSessionView.swift; sourceTree = "<group>"; };
 		931EC010A2D940B0E42287A4 /* InsightsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
 		26AB000000000000000000F1 /* ProvidersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProvidersViewModel.swift; sourceTree = "<group>"; };
 		26AB000000000000000000F2 /* ProvidersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProvidersView.swift; sourceTree = "<group>"; };
@@ -887,6 +891,7 @@
 				1A2B3C4D5E6F70000000216 /* Skills */,
 				1A2B3C4D5E6F70000000206 /* Memory */,
 				B50E1CE3A8912B92B1924714 /* Insights */,
+				AB01000000000000000000A1 /* Voice */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -1128,6 +1133,15 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		AB01000000000000000000A1 /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				AB01000000000000000000A2 /* VoiceSessionViewModel.swift */,
+				AB01000000000000000000A4 /* VoiceSessionView.swift */,
+			);
+			path = Voice;
+			sourceTree = "<group>";
+		};
 		1A2B3C4D5E6F70000000206 /* Memory */ = {
 			isa = PBXGroup;
 			children = (
@@ -1360,6 +1374,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB01000000000000000000A3 /* VoiceSessionViewModel.swift in Sources */,
+				AB01000000000000000000A5 /* VoiceSessionView.swift in Sources */,
 				1A2B3C4D5E6F700000000001 /* HermesMobileApp.swift in Sources */,
 				1A2B3C4D5E6F700000000002 /* ContentView.swift in Sources */,
 				1A2B3C4D5E6F700000000338 /* HermexAppIntents.swift in Sources */,

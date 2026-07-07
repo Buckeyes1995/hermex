@@ -27,6 +27,7 @@ struct SessionListView: View {
     @State private var sessionExportShareItem: SessionExportShareItem?
     @State private var isPresentingProjectCreation = false
     @State private var isPresentingAddServer = false
+    @State private var isPresentingVoiceSession = false
     @State private var projectPendingDeletion: ProjectSummary?
     @State private var projectPendingRename: ProjectSummary?
     @State private var searchText = ""
@@ -82,10 +83,13 @@ struct SessionListView: View {
                 content
 
                 if !isSearchingSessions {
-                    newSessionButton
-                        .padding(.trailing, 24)
-                        .padding(.bottom, 22)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    HStack(spacing: 12) {
+                        voiceSessionButton
+                        newSessionButton
+                    }
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 22)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .navigationDestination(item: $createdSession) { session in
@@ -217,6 +221,13 @@ struct SessionListView: View {
                 // On success `addServer` switches the active server, which
                 // rebuilds this stack via ContentView's `.id(server)` (#283).
                 AddServerView(authManager: authManager)
+            }
+            .fullScreenCover(isPresented: $isPresentingVoiceSession) {
+                VoiceSessionView(server: server)
+            }
+            .onChange(of: isPresentingVoiceSession) {
+                guard !isPresentingVoiceSession else { return }
+                Task { await refreshSessionsAndActiveProfile() }
             }
             .task {
                 await refreshSessionsAndActiveProfile()
@@ -513,6 +524,33 @@ struct SessionListView: View {
         .disabled(viewModel.isViewingCachedData || pendingNewChat != nil)
         .opacity(viewModel.isViewingCachedData ? 0.45 : 1)
         .accessibilityLabel("New Session")
+    }
+
+    private var voiceSessionButton: some View {
+        HapticButton(feedbackStyle: .medium) {
+            isPresentingVoiceSession = true
+        } label: {
+            Image(systemName: "mic.fill")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(newSessionButtonForegroundColor)
+                .frame(width: 58, height: 58)
+                .contentShape(Circle())
+                .background {
+                    if let fill = newSessionButtonSolidThemeFill {
+                        Circle().fill(fill)
+                    }
+                }
+                .sessionsChromeGlass(
+                    isInteractive: true,
+                    tint: newSessionButtonGlassTint,
+                    fallbackMaterial: .regularMaterial,
+                    in: Circle()
+                )
+        }
+        .buttonStyle(SessionListFloatingChatButtonStyle())
+        .disabled(viewModel.isViewingCachedData)
+        .opacity(viewModel.isViewingCachedData ? 0.45 : 1)
+        .accessibilityLabel("Voice Session")
     }
 
     private var visibleSessions: [SessionSummary] {
