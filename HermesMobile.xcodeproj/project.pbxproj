@@ -93,6 +93,7 @@
 		C03910000000000000000015 /* SessionIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03900000000000000000015 /* SessionIdentityTests.swift */; };
 		C03910000000000000000016 /* TranscriptDisplayModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03900000000000000000016 /* TranscriptDisplayModelTests.swift */; };
 		C14300000000000000000003 /* StreamingMarkdownSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14300000000000000000004 /* StreamingMarkdownSupportTests.swift */; };
+		C13100000000000000000001 /* ChatTranscriptLazyRowRealizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13100000000000000000002 /* ChatTranscriptLazyRowRealizationTests.swift */; };
 		C13000000000000000000001 /* ChatVerticalScrollAxisGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13000000000000000000002 /* ChatVerticalScrollAxisGuardTests.swift */; };
 		C04100000000000000000001 /* ChatComposerConfigLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C04100000000000000000002 /* ChatComposerConfigLoader.swift */; };
 		C04100000000000000000003 /* ChatComposerConfigLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C04100000000000000000004 /* ChatComposerConfigLoaderTests.swift */; };
@@ -412,6 +413,7 @@
 		C03900000000000000000015 /* SessionIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionIdentityTests.swift; sourceTree = "<group>"; };
 		C03900000000000000000016 /* TranscriptDisplayModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptDisplayModelTests.swift; sourceTree = "<group>"; };
 		C14300000000000000000004 /* StreamingMarkdownSupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingMarkdownSupportTests.swift; sourceTree = "<group>"; };
+		C13100000000000000000002 /* ChatTranscriptLazyRowRealizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTranscriptLazyRowRealizationTests.swift; sourceTree = "<group>"; };
 		C13000000000000000000002 /* ChatVerticalScrollAxisGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatVerticalScrollAxisGuardTests.swift; sourceTree = "<group>"; };
 		C04100000000000000000002 /* ChatComposerConfigLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposerConfigLoader.swift; sourceTree = "<group>"; };
 		C04100000000000000000004 /* ChatComposerConfigLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposerConfigLoaderTests.swift; sourceTree = "<group>"; };
@@ -755,6 +757,7 @@
 				C03900000000000000000015 /* SessionIdentityTests.swift */,
 				C03900000000000000000016 /* TranscriptDisplayModelTests.swift */,
 				C14300000000000000000004 /* StreamingMarkdownSupportTests.swift */,
+				C13100000000000000000002 /* ChatTranscriptLazyRowRealizationTests.swift */,
 				C13000000000000000000002 /* ChatVerticalScrollAxisGuardTests.swift */,
 				C0DE25000000000000000004 /* ChatScrollPolicyTests.swift */,
 				1A2B3C4D5E6F7000000000DD /* SSEClientTests.swift */,
@@ -1580,6 +1583,7 @@
 				C03910000000000000000015 /* SessionIdentityTests.swift in Sources */,
 				C03910000000000000000016 /* TranscriptDisplayModelTests.swift in Sources */,
 				C14300000000000000000003 /* StreamingMarkdownSupportTests.swift in Sources */,
+				C13100000000000000000001 /* ChatTranscriptLazyRowRealizationTests.swift in Sources */,
 				C13000000000000000000001 /* ChatVerticalScrollAxisGuardTests.swift in Sources */,
 				C0DE25000000000000000003 /* ChatScrollPolicyTests.swift in Sources */,
 				1A2B3C4D5E6F7000000000DC /* SSEClientTests.swift in Sources */,
