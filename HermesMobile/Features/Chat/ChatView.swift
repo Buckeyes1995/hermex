@@ -450,6 +450,7 @@ struct ChatView: View {
                 TranscriptMediaPreviewView(
                     server: server,
                     item: item,
+                    sessionID: viewModel.attachmentSessionID,
                     onAPIError: onAPIError
                 )
             }

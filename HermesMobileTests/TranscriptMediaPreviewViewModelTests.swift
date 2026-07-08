@@ -42,6 +42,57 @@ final class TranscriptMediaPreviewViewModelTests: XCTestCase {
         XCTAssertEqual(recorder.requestCount, 1)
     }
 
+    func testLocalPathWithSessionIDIncludesSessionIDQueryParam() async throws {
+        let recorder = TranscriptMediaPreviewRequestRecorder()
+        let imageData = try XCTUnwrap(Self.imageData())
+        let mediaPath = "/Users/hermes/.hermes/terminal_output/screenshot.png"
+        let sessionID = "sess_abc123"
+        let client = makeClient { request in
+            recorder.record(request)
+            return self.response(statusCode: 200, data: imageData, for: request)
+        }
+        let viewModel = TranscriptMediaPreviewViewModel(
+            server: Self.baseURL,
+            reference: .init(rawReference: mediaPath),
+            sessionID: sessionID,
+            apiClient: client
+        )
+
+        await viewModel.load()
+
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertNotNil(viewModel.previewData)
+
+        let items = queryItems(for: try XCTUnwrap(recorder.firstURL))
+        XCTAssertEqual(items["path"], mediaPath, "path query param must be present")
+        XCTAssertEqual(items["session_id"], sessionID, "session_id must be included for session-scoped local paths")
+    }
+
+    func testRemoteURLMediaDoesNotIncludeSessionID() async throws {
+        let recorder = TranscriptMediaPreviewRequestRecorder()
+        let imageData = try XCTUnwrap(Self.imageData())
+        let remoteURL = try XCTUnwrap(URL(string: "https://example.test/generated/image.png"))
+        let client = makeClient { request in
+            recorder.record(request)
+            return self.response(statusCode: 200, data: imageData, for: request)
+        }
+        let viewModel = TranscriptMediaPreviewViewModel(
+            server: Self.baseURL,
+            reference: .init(rawReference: remoteURL.absoluteString),
+            sessionID: "sess_should_be_ignored",
+            apiClient: client
+        )
+
+        await viewModel.load()
+
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertNotNil(viewModel.previewData)
+
+        // Remote URLs are fetched directly — session_id must not be appended
+        let items = queryItems(for: try XCTUnwrap(recorder.firstURL))
+        XCTAssertNil(items["session_id"], "session_id must not appear on remote URL fetches")
+    }
+
     func testLoadSameServerRemoteImageUsesAuthenticatedSession() async throws {
         let recorder = TranscriptMediaPreviewRequestRecorder()
         let imageData = try XCTUnwrap(Self.imageData())

@@ -157,7 +157,7 @@ final class ChatAttachmentCoordinator {
         guard reference.isRasterImageCandidate else { return nil }
 
         do {
-            let data = try await client.transcriptMediaData(for: reference)
+            let data = try await client.transcriptMediaData(for: reference, sessionID: delegate?.attachmentSessionID)
             return await ImagePreviewDownsampler.previewDataAsync(
                 from: data,
                 maxPixelSize: ImagePreviewDownsampler.attachmentMaxPixelSize
