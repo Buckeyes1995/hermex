@@ -194,7 +194,7 @@ struct ChatTranscriptView: View {
         viewportWidth: CGFloat,
         contentWidth: CGFloat
     ) -> some View {
-        VStack(spacing: transcriptMessageSpacing) {
+        LazyVStack(spacing: transcriptMessageSpacing) {
             olderMessagesButton(proxy: proxy)
 
             if let compressionReferenceCard, compressionReferenceCard.afterRenderID == nil {
@@ -266,6 +266,9 @@ struct ChatTranscriptView: View {
                 .allowsHitTesting(false)
         }
         .padding(.top, 16)
+        // LazyVStack is required here — do not revert to VStack.
+        // A plain VStack realizes every row on load, making long transcripts
+        // prohibitively slow. See issue #32.
         .frame(width: contentWidth, alignment: .leading)
         .padding(.horizontal, transcriptHorizontalPadding)
         .frame(width: viewportWidth, alignment: .leading)
