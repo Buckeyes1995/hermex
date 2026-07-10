@@ -174,6 +174,8 @@ struct ChatView: View {
             isUpdatingConfiguration: viewModel.isUpdatingComposerConfiguration,
             pendingAttachments: viewModel.pendingAttachments,
             isUploadingAttachment: viewModel.isUploadingAttachment,
+            attachmentUploadCount: viewModel.attachmentUploadCount,
+            attachmentUploadGeneration: viewModel.attachmentUploadGeneration,
             isSendingVoiceNote: viewModel.isSendingVoiceNote,
             autoStartsVoiceInput: autoStartsVoiceInput,
             uploadAttachmentErrorMessage: viewModel.uploadAttachmentErrorMessage,
@@ -416,6 +418,8 @@ struct ChatView: View {
                                 Label("Files", systemImage: "folder")
                             }
                             .disabled(viewModel.isViewingCachedData)
+                            .keyboardShortcut("f", modifiers: [.command, .shift])
+                            .hoverEffect(.highlight)
                             .accessibilityLabel("Files")
                         }
 
