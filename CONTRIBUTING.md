@@ -11,8 +11,8 @@ read the [Code of Conduct](CODE_OF_CONDUCT.md).
 - Clone the repo and open `HermesMobile.xcodeproj`. Dependencies resolve
   automatically via Swift Package Manager — the dependency list is locked in
   `PROJECT_SPEC.md`; do not add new ones without maintainer approval.
-- Build and run the **`HermesMobile`** scheme on an iPhone simulator
-  (`iPhone 17` is the reference device; any recent iPhone simulator works).
+- Build and run the **`HermesMobile`** scheme on an iPhone or iPad simulator
+  (`iPhone 17` remains the reference XCTest device; for iPad UI work, also run a recent iPad simulator manually).
 - To actually use the app you need your own
   [hermes-webui](https://github.com/nesquena/hermes-webui) server — the app is
   a client only. See the [README](README.md#you-need-your-own-server) for

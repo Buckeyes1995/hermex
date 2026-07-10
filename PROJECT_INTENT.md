@@ -2,7 +2,7 @@
 
 This file is for fast orientation only. `PROJECT_SPEC.md` remains the source of truth for product scope, API behavior, build phases, dependencies, and open decisions.
 
-Hermex is a native iPhone control surface for a self-hosted Hermes AI agent stack. The phone is the control plane and review surface; the macOS/server-side Hermes WebUI stack is the execution plane.
+Hermex is a native iPhone and iPad control surface for a self-hosted Hermes AI agent stack. The app is the control plane and review surface; the macOS/server-side Hermes WebUI stack is the execution plane.
 
 ## Mental Model
 

@@ -8,6 +8,8 @@ struct ArchivedSessionsView: View {
 
     @State private var viewModel: ArchivedSessionsViewModel
     @State private var openedSession: SessionSummary?
+    @State private var selectedSession: SessionSummary?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage(SessionRowDisplaySettings.showMessageCountKey) private var showsSessionMessageCount = true
     @AppStorage(SessionRowDisplaySettings.showWorkspaceKey) private var showsSessionWorkspace = true
     @AppStorage(AppHaptics.isEnabledKey) private var isHapticsEnabled = true
@@ -18,41 +20,73 @@ struct ArchivedSessionsView: View {
         _viewModel = State(initialValue: ArchivedSessionsViewModel(server: server))
     }
 
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
     var body: some View {
-        content
-            .navigationTitle("Archived Sessions")
+        Group {
+            if usesExpandedLayout {
+                expandedLayout
+            } else {
+                compactLayout
+            }
+        }
+        .navigationTitle("Archived Sessions")
+        .task {
+            await load()
+        }
+        .refreshable {
+            await load()
+        }
+        .alert(
+            "Action Failed",
+            isPresented: Binding(
+                get: { viewModel.actionErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        viewModel.clearActionError()
+                    }
+                }
+            )
+        ) {
+            Button("OK") {
+                viewModel.clearActionError()
+            }
+        } message: {
+            Text(viewModel.actionErrorMessage ?? "")
+        }
+    }
+
+    private var compactLayout: some View {
+        content(usesNavigationLink: true)
             .navigationDestination(item: $openedSession) { session in
                 // Opening an archived session reuses the normal read path —
                 // no special-casing on the chat side (issue #17).
                 ChatView(session: session, server: server, onAPIError: onAPIError)
             }
-            .task {
-                await load()
-            }
-            .refreshable {
-                await load()
-            }
-            .alert(
-                "Action Failed",
-                isPresented: Binding(
-                    get: { viewModel.actionErrorMessage != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            viewModel.clearActionError()
-                        }
-                    }
+    }
+
+    private var expandedLayout: some View {
+        NavigationSplitView {
+            content(usesNavigationLink: false)
+                .navigationSplitViewColumnWidth(min: 320, ideal: 360)
+        } detail: {
+            if let selectedSession {
+                ChatView(session: selectedSession, server: server, onAPIError: onAPIError)
+                    .id(selectedSession.id)
+            } else {
+                ContentUnavailableView(
+                    "Select a Session",
+                    systemImage: "archivebox",
+                    description: Text("Choose an archived session from the list.")
                 )
-            ) {
-                Button("OK") {
-                    viewModel.clearActionError()
-                }
-            } message: {
-                Text(viewModel.actionErrorMessage ?? "")
             }
+        }
     }
 
     @ViewBuilder
-    private var content: some View {
+    private func content(usesNavigationLink: Bool) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if viewModel.isLoading && viewModel.sessions.isEmpty {
@@ -80,7 +114,7 @@ struct ArchivedSessionsView: View {
                 } else {
                     VStack(spacing: 2) {
                         ForEach(visibleSessions) { session in
-                            archivedSessionRow(for: session)
+                            archivedSessionRow(for: session, usesNavigationLink: usesNavigationLink)
                         }
                     }
                     .padding(.horizontal, 12)
@@ -91,18 +125,32 @@ struct ArchivedSessionsView: View {
         }
     }
 
-    private func archivedSessionRow(for session: SessionSummary) -> some View {
+    @ViewBuilder
+    private func archivedSessionRow(for session: SessionSummary, usesNavigationLink: Bool) -> some View {
         HStack(spacing: 0) {
-            Button {
-                openedSession = session
-            } label: {
-                SessionRowView(
-                    session: session,
-                    showsMessageCount: showsSessionMessageCount,
-                    showsWorkspace: showsSessionWorkspace
-                )
+            if usesNavigationLink {
+                Button {
+                    openedSession = session
+                } label: {
+                    SessionRowView(
+                        session: session,
+                        showsMessageCount: showsSessionMessageCount,
+                        showsWorkspace: showsSessionWorkspace
+                    )
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    selectedSession = session
+                } label: {
+                    SessionRowView(
+                        session: session,
+                        showsMessageCount: showsSessionMessageCount,
+                        showsWorkspace: showsSessionWorkspace
+                    )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             unarchiveButton(for: session)
         }
@@ -145,6 +193,9 @@ struct ArchivedSessionsView: View {
             let didUnarchive = await viewModel.unarchive(session)
             handleLastError()
             if didUnarchive {
+                if selectedSession?.id == session.id {
+                    selectedSession = nil
+                }
                 SessionHaptics.archiveStateChanged(isEnabled: isHapticsEnabled)
             }
         }

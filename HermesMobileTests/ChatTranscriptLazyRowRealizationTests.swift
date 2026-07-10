@@ -14,14 +14,12 @@ final class ChatTranscriptLazyRowRealizationTests: XCTestCase {
 
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
 
-        XCTAssertTrue(
-            source.contains("LazyVStack(spacing: transcriptMessageSpacing)"),
-            "transcriptScrollContent must use LazyVStack, not VStack, to avoid eager row realization on long transcripts (issue #32)."
-        )
-        XCTAssertFalse(
-            source.contains("VStack(spacing: transcriptMessageSpacing)"),
-            "transcriptScrollContent must not revert to eager VStack (issue #32)."
-        )
+        XCTAssertTrue(matches(#"(?m)^\s*LazyVStack\(spacing: transcriptMessageSpacing\)"#, in: source))
+        XCTAssertFalse(matches(#"(?m)^\s*VStack\(spacing: transcriptMessageSpacing\)"#, in: source))
+    }
+
+    private func matches(_ pattern: String, in source: String) -> Bool {
+        source.range(of: pattern, options: .regularExpression) != nil
     }
 
     private func sourceFileURL() -> URL? {

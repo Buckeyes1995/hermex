@@ -6,6 +6,8 @@ struct TasksView: View {
 
     @State private var viewModel: TasksViewModel
     @State private var isPresentingCreateTask = false
+    @State private var selectedJob: CronJob?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(server: URL, onAPIError: @escaping (Error) -> Void) {
         self.server = server
@@ -13,10 +15,20 @@ struct TasksView: View {
         _viewModel = State(initialValue: TasksViewModel(server: server))
     }
 
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
     var body: some View {
-        content
-            .navigationTitle("Tasks")
-            .toolbar {
+        Group {
+            if usesExpandedLayout {
+                expandedLayout
+            } else {
+                compactLayout
+            }
+        }
+        .navigationTitle("Tasks")
+        .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         viewModel.clearActionError()
@@ -60,7 +72,7 @@ struct TasksView: View {
     }
 
     @ViewBuilder
-    private var content: some View {
+    private func content(usesNavigationLink: Bool) -> some View {
         if viewModel.isLoading && viewModel.jobs.isEmpty {
             ProgressView("Loading tasks...")
         } else if let errorMessage = viewModel.errorMessage, viewModel.jobs.isEmpty {
@@ -80,7 +92,40 @@ struct TasksView: View {
                 Text("Scheduled jobs from the Hermes server will appear here.")
             }
         } else {
-            List {
+            taskList(usesNavigationLink: usesNavigationLink)
+        }
+    }
+
+    private var compactLayout: some View {
+        content(usesNavigationLink: true)
+    }
+
+    private var expandedLayout: some View {
+        NavigationSplitView {
+            content(usesNavigationLink: false)
+                .navigationSplitViewColumnWidth(min: 320, ideal: 360)
+        } detail: {
+            if let selectedJob {
+                TaskDetailView(
+                    job: selectedJob,
+                    runningElapsed: viewModel.runningElapsed(for: selectedJob),
+                    server: server,
+                    onAPIError: onAPIError,
+                    onMutation: handleMutation
+                )
+                .id(selectedJob.id)
+            } else {
+                ContentUnavailableView(
+                    "Select a Task",
+                    systemImage: "calendar.badge.clock",
+                    description: Text("Choose a scheduled job from the list.")
+                )
+            }
+        }
+    }
+
+    private func taskList(usesNavigationLink: Bool) -> some View {
+        List {
                 Section {
                     HStack {
                         Label("Running now", systemImage: "bolt.fill")
@@ -92,27 +137,53 @@ struct TasksView: View {
 
                 Section("Scheduled Jobs") {
                     ForEach(viewModel.jobs) { job in
-                        NavigationLink {
-                            TaskDetailView(
-                                job: job,
-                                runningElapsed: viewModel.runningElapsed(for: job),
-                                server: server,
-                                onAPIError: onAPIError,
-                                onMutation: { mutation in
-                                    viewModel.apply(mutation)
-                                }
-                            )
-                        } label: {
-                            CronJobRowView(
-                                job: job,
-                                runningElapsed: viewModel.runningElapsed(for: job)
-                            )
+                        if usesNavigationLink {
+                            NavigationLink {
+                                TaskDetailView(
+                                    job: job,
+                                    runningElapsed: viewModel.runningElapsed(for: job),
+                                    server: server,
+                                    onAPIError: onAPIError,
+                                    onMutation: handleMutation
+                                )
+                            } label: {
+                                CronJobRowView(
+                                    job: job,
+                                    runningElapsed: viewModel.runningElapsed(for: job)
+                                )
+                            }
+                        } else {
+                            Button {
+                                selectedJob = job
+                            } label: {
+                                CronJobRowView(
+                                    job: job,
+                                    runningElapsed: viewModel.runningElapsed(for: job)
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
+        }
+        .refreshable {
+            await loadTasks()
+        }
+    }
+
+    private func handleMutation(_ mutation: CronJobListMutation) {
+        viewModel.apply(mutation)
+
+        guard let selectedJobID = selectedJob?.jobId else { return }
+
+        switch mutation {
+        case .upsert(let job):
+            if job.jobId == selectedJobID {
+                selectedJob = job
             }
-            .refreshable {
-                await loadTasks()
+        case .delete(let jobID):
+            if jobID == selectedJobID {
+                selectedJob = nil
             }
         }
     }

@@ -109,7 +109,7 @@ After each completed implementation slice:
 1. Confirm XcodeBuildMCP sees the repo defaults.
 2. Run focused tests for the changed behavior when available.
 3. Run the full XCTest suite before asking for review or committing.
-4. Build and launch the app in Simulator when UI or runtime behavior changed.
+4. Build and launch the app in Simulator when UI or runtime behavior changed. If the change affects iPad UI, also run a recent iPad simulator.
 5. Capture a screenshot or logs if the slice needs visual/runtime evidence.
 6. Let the owner run the manual simulator checklist for the slice.
 

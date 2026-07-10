@@ -7,6 +7,7 @@ struct SkillsView: View {
     @State private var viewModel: SkillsViewModel
     @State private var selectedSkill: SkillSummary?
     @State private var searchText = ""
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(server: URL, onAPIError: @escaping (Error) -> Void) {
         self.server = server
@@ -14,9 +15,19 @@ struct SkillsView: View {
         _viewModel = State(initialValue: SkillsViewModel(server: server))
     }
 
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
     var body: some View {
-        content
-            .navigationTitle("Skills")
+        Group {
+            if usesExpandedLayout {
+                expandedLayout
+            } else {
+                compactLayout
+            }
+        }
+        .navigationTitle("Skills")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -41,8 +52,30 @@ struct SkillsView: View {
         viewModel.filteredGroupedSkills(searchText: searchText)
     }
 
+    private var compactLayout: some View {
+        content(usesNavigationLink: true)
+    }
+
+    private var expandedLayout: some View {
+        NavigationSplitView {
+            content(usesNavigationLink: false)
+                .navigationSplitViewColumnWidth(min: 320, ideal: 360)
+        } detail: {
+            if let selectedSkill {
+                SkillDetailView(skill: selectedSkill, server: server, onAPIError: onAPIError)
+                    .id(selectedSkill.id)
+            } else {
+                ContentUnavailableView(
+                    "Select a Skill",
+                    systemImage: "hammer",
+                    description: Text("Choose a skill from the list.")
+                )
+            }
+        }
+    }
+
     @ViewBuilder
-    private var content: some View {
+    private func content(usesNavigationLink: Bool) -> some View {
         if viewModel.isLoading && viewModel.skills.isEmpty {
             ProgressView("Loading skills...")
         } else if let errorMessage = viewModel.errorMessage, viewModel.skills.isEmpty {
@@ -79,7 +112,9 @@ struct SkillsView: View {
                             onToggleSkill: { skill, enabled in
                                 await toggle(skill: skill, enabled: enabled)
                             },
-                            onAPIError: onAPIError
+                            onAPIError: onAPIError,
+                            usesNavigationLink: usesNavigationLink,
+                            onSelectSkill: { selectedSkill = $0 }
                         )
                     }
                 }
@@ -117,6 +152,18 @@ private struct SkillCategorySection: View {
     let togglingSkillNames: Set<String>
     let onToggleSkill: (SkillSummary, Bool) async -> Void
     let onAPIError: (Error) -> Void
+    let usesNavigationLink: Bool
+    let onSelectSkill: (SkillSummary) -> Void
+
+    private func skillRow(for skill: SkillSummary) -> some View {
+        SkillRow(
+            skill: skill,
+            isToggling: isToggling(skill),
+            onToggle: canToggle(skill) ? { enabled in
+                Task { await onToggleSkill(skill, enabled) }
+            } : nil
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -128,22 +175,26 @@ private struct SkillCategorySection: View {
 
             VStack(spacing: 0) {
                 ForEach(Array(skills.enumerated()), id: \.offset) { index, skill in
-                    NavigationLink {
-                        SkillDetailView(
-                            skill: skill,
-                            server: server,
-                            onAPIError: onAPIError
-                        )
-                    } label: {
-                        SkillRow(
-                            skill: skill,
-                            isToggling: isToggling(skill),
-                            onToggle: canToggle(skill) ? { enabled in
-                                Task { await onToggleSkill(skill, enabled) }
-                            } : nil
-                        )
+                    Group {
+                        if usesNavigationLink {
+                            NavigationLink {
+                                SkillDetailView(
+                                    skill: skill,
+                                    server: server,
+                                    onAPIError: onAPIError
+                                )
+                            } label: {
+                                skillRow(for: skill)
+                            }
+                        } else {
+                            Button {
+                                onSelectSkill(skill)
+                            } label: {
+                                skillRow(for: skill)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                     .opacity(skill.disabled == true ? 0.55 : 1)
                     .contextMenu {
                         if canToggle(skill) {

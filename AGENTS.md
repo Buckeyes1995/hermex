@@ -1,6 +1,6 @@
 # AGENTS.md — working agreement for Hermex
 
-Hermex is a native SwiftUI iPhone app (Xcode target/scheme `HermesMobile`, App Store
+Hermex is a native SwiftUI iPhone and iPad app (Xcode target/scheme `HermesMobile`, App Store
 name `Hermex`) for a self-hosted `hermes-webui` server. `PROJECT_SPEC.md` is the
 product/API source of truth — if a request conflicts with it, stop and ask.
 Read by every agent (Codex, Claude Code, …); keep it tool-agnostic.
@@ -54,6 +54,7 @@ Read by every agent (Codex, Claude Code, …); keep it tool-agnostic.
   `build_run_sim` or a plain signed Debug build (no signing-disabling flags), then install/launch.
 - Before asking for review or committing a slice: run the full XCTest suite, and
   build + launch the app for the human's manual simulator test when UI changed.
+  If the change affects iPad UI, include a recent iPad simulator pass too.
 
 ## App identity (resolved via xcconfig — not grep-able)
 Bundle ID `com.uzairansar.hermesmobile` · tests `….tests` · Team `6GYD9C9N6R` · SKU `hermes-mobile-ios`.

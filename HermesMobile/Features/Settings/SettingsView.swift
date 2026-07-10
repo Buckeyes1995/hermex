@@ -78,6 +78,19 @@ struct SettingsView: View {
     @AppStorage(SessionIdentitySettings.initialsKey) private var identityInitials = ""
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    private var settingsContentMaxWidth: CGFloat? {
+        usesExpandedLayout ? 960 : nil
+    }
+
+    private var settingsHorizontalPadding: CGFloat {
+        usesExpandedLayout ? 32 : 16
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -440,7 +453,9 @@ struct SettingsView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .frame(maxWidth: settingsContentMaxWidth, alignment: .top)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, settingsHorizontalPadding)
             .padding(.top, 18)
             .padding(.bottom, 36)
         }

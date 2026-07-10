@@ -7,6 +7,8 @@ struct FileBrowserView: View {
     private let server: URL
     @State private var viewModel: FileBrowserViewModel
     @State private var searchText = ""
+    @State private var selectedPreviewEntry: WorkspaceEntry?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(session: SessionSummary, server: URL, onAPIError: @escaping (Error) -> Void) {
         self.session = session
@@ -15,22 +17,48 @@ struct FileBrowserView: View {
         _viewModel = State(initialValue: FileBrowserViewModel(session: session, server: server))
     }
 
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
     var body: some View {
+        Group {
+            if usesExpandedLayout {
+                expandedLayout
+            } else {
+                compactLayout
+            }
+        }
+        .navigationTitle("Files")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadInitialRootIfNeeded()
+        }
+    }
+
+    private var compactLayout: some View {
         VStack(spacing: 0) {
             pathHeader
             searchBar
-
-            content
+            browserContent(usesNavigationLink: true)
         }
-            .navigationTitle("Files")
-            .navigationBarTitleDisplayMode(.inline)
-            .task {
-                await loadInitialRootIfNeeded()
+    }
+
+    private var expandedLayout: some View {
+        NavigationSplitView {
+            VStack(spacing: 0) {
+                pathHeader
+                searchBar
+                browserContent(usesNavigationLink: false)
             }
+            .navigationSplitViewColumnWidth(min: 320, ideal: 360)
+        } detail: {
+            previewDetail
+        }
     }
 
     @ViewBuilder
-    private var content: some View {
+    private func browserContent(usesNavigationLink: Bool) -> some View {
         if viewModel.isLoading && viewModel.entries.isEmpty {
             ProgressView("Loading files...")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -67,12 +95,19 @@ struct FileBrowserView: View {
                         FileBrowserRow(entry: entry, showsDisclosure: true)
                     }
                     .buttonStyle(.plain)
-                } else if entry.path != nil {
+                } else if usesNavigationLink, entry.path != nil {
                     NavigationLink {
                         FilePreviewView(session: session, server: server, entry: entry, onAPIError: onAPIError)
                     } label: {
                         FileBrowserRow(entry: entry, showsDisclosure: false)
                     }
+                } else if entry.path != nil {
+                    Button {
+                        selectedPreviewEntry = entry
+                    } label: {
+                        FileBrowserRow(entry: entry, showsDisclosure: false)
+                    }
+                    .buttonStyle(.plain)
                 } else {
                     FileBrowserRow(entry: entry, showsDisclosure: false)
                 }
@@ -81,6 +116,20 @@ struct FileBrowserView: View {
                 await reloadCurrentPath()
             }
             .listStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var previewDetail: some View {
+        if let selectedPreviewEntry {
+            FilePreviewView(session: session, server: server, entry: selectedPreviewEntry, onAPIError: onAPIError)
+                .id(selectedPreviewEntry.path ?? selectedPreviewEntry.id)
+        } else {
+            ContentUnavailableView(
+                "Select a File",
+                systemImage: "doc.text.magnifyingglass",
+                description: Text(viewModel.displayPath)
+            )
         }
     }
 
@@ -196,23 +245,34 @@ struct FileBrowserView: View {
     }
 
     private func loadRoot() async {
+        selectedPreviewEntry = nil
         await viewModel.loadRoot()
         handleLastError()
     }
 
     private func loadInitialRootIfNeeded() async {
         await viewModel.loadInitialRootIfNeeded()
+        syncSelectedPreviewIfNeeded()
         handleLastError()
     }
 
     private func reloadCurrentPath() async {
         await viewModel.reloadCurrentPath()
+        syncSelectedPreviewIfNeeded()
         handleLastError()
     }
 
     private func load(path: String) async {
+        selectedPreviewEntry = nil
         await viewModel.load(path: path)
         handleLastError()
+    }
+
+    private func syncSelectedPreviewIfNeeded() {
+        guard let selectedPath = selectedPreviewEntry?.path else { return }
+        selectedPreviewEntry = viewModel.entries.first { entry in
+            entry.path == selectedPath && !entry.isBrowsableDirectory
+        }
     }
 
     private func handleLastError() {

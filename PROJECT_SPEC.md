@@ -20,7 +20,7 @@ If anything in this spec is ambiguous, **stop and ask the human owner before gue
 ## 1. Project summary
 
 ### 1.1 What we're building
-A native iOS app (SwiftUI, iOS 18+, iPhone only) that lets the user drive a self-hosted Hermes AI agent from their phone. The user runs the `hermes-webui` Python server on a machine they control and connects from the phone via Cloudflare Tunnel (or Tailscale).
+A native iOS app (SwiftUI, iOS 18+, universal iPhone + iPad) that lets the user drive a self-hosted Hermes AI agent from their device. The user runs the `hermes-webui` Python server on a machine they control and connects from the app via Cloudflare Tunnel (or Tailscale).
 
 ### 1.2 What it is NOT
 - ❌ Not a webview wrapper around the existing browser UI.
@@ -62,7 +62,7 @@ The server owns execution. The app owns mobile interaction quality.
 | 2 | Hosting models documented | **Cloudflare Tunnel (primary)** and **Tailscale (secondary)** |
 | 3 | Upstream strategy | **Pin to upstream tags** for v1; revisit forking later if API churn becomes painful |
 | 4 | Auth method | **Password only** for v1 (no OAuth) |
-| 5 | Target | iOS 18+, iPhone only, portrait + landscape |
+| 5 | Target | iOS 18+, universal iPhone + iPad app; portrait + landscape on both, with iPad-native layouts |
 | 6 | Distribution | **TestFlight first**, App Store later |
 | 7 | Push notifications | **Skip for v1** |
 | 8 | Terminal feature | **Skip for v1** |
@@ -99,6 +99,7 @@ Hermex aims for a compact, glass-forward native iOS treatment:
 - Runtime controls: compact model and reasoning selectors in a bottom control row inside the composer, with SF Symbols for the reasoning-effort icons.
 - Pickers/sheets: dense, native, scan-friendly model/profile/workspace pickers rather than marketing-style pages.
 - Sessions and Settings: layout, spacing, glass treatment, and navigation hierarchy consistent with the chat/composer direction while preserving Hermes-specific actions.
+- iPad: favor native split navigation, wider detail panes, keyboard/pointer friendliness, and landscape-first density while keeping iPhone behavior intact.
 
 This is a design direction, not a dependency. Do not add third-party UI packages to achieve this look.
 
@@ -770,7 +771,7 @@ This is the long-term maintenance plan. Implement the basics in v1.
 The app is "v1 done" when:
 - [ ] An internal TestFlight tester can install it and, given their server URL and password, can: log in, see their sessions, open a session, use session/message action menus, send a message with configured composer options and attachments, watch the response stream, browse workspace files, view a file, open read-only tasks/skills/memory, and view limited session-based usage analytics.
 - [ ] All §8 pre-TestFlight phases 0–12 complete.
-- [ ] Zero crashes in 30 minutes of normal use on iPhone 13 or newer running iOS 18+.
+- [ ] Zero crashes in 30 minutes of normal use on a recent iPhone or iPad running iOS 18+.
 - [ ] README documents Cloudflare Tunnel (primary) and Tailscale (alternative) setup end-to-end.
 - [ ] Contract tests pass against the upstream tag pinned in `UPSTREAM_TESTED_SHA`.
 - [x] No third-party dependencies beyond the locked list in §5.

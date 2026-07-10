@@ -5,11 +5,20 @@ struct InsightsView: View {
     let onAPIError: (Error) -> Void
 
     @State private var viewModel: InsightsViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(server: URL, onAPIError: @escaping (Error) -> Void) {
         self.server = server
         self.onAPIError = onAPIError
         _viewModel = State(initialValue: InsightsViewModel(server: server))
+    }
+
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    private var readableContentMaxWidth: CGFloat? {
+        usesExpandedLayout ? 960 : nil
     }
 
     var body: some View {
@@ -160,6 +169,8 @@ struct InsightsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .frame(maxWidth: readableContentMaxWidth)
+            .frame(maxWidth: .infinity)
             .listStyle(.insetGrouped)
             .refreshable {
                 await loadInsights()

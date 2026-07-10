@@ -58,7 +58,7 @@ struct ContentView: View {
         case .loggedOut(let server):
             OnboardingView(authManager: authManager, savedServer: server)
         case .loggedIn(let server):
-            SessionListView(
+            SessionRootView(
                 authManager: authManager,
                 server: server,
                 pendingSharedImport: $pendingSharedImport,
@@ -130,6 +130,125 @@ struct ContentView: View {
         } catch {
             pendingSharedImport = nil
         }
+    }
+}
+
+
+struct SessionRootView: View {
+    private enum SessionSplitDetail: Identifiable {
+        case session(SessionSummary)
+        case newChat(PendingNewChatRoute)
+        case utility(SessionListUtilityDestination)
+
+        var id: String {
+            switch self {
+            case .session(let session):
+                return "session:\(session.id)"
+            case .newChat(let route):
+                return "new-chat:\(route.id.uuidString)"
+            case .utility(let destination):
+                return "utility:\(destination.id)"
+            }
+        }
+    }
+
+    @Bindable var authManager: AuthManager
+    let server: URL
+    @Binding var pendingSharedImport: SharedImport?
+    @Binding var pendingDeepLinkedSessionID: String?
+    @Binding var requestedNewChat: NewChatRequest?
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var selectedDetail: SessionSplitDetail?
+
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    var body: some View {
+        Group {
+            if usesExpandedLayout {
+                expandedLayout
+            } else {
+                sessionList()
+            }
+        }
+    }
+
+    private var expandedLayout: some View {
+        NavigationSplitView {
+            sessionList(
+                onOpenSession: { selectedDetail = .session($0) },
+                onOpenNewChat: { selectedDetail = .newChat($0) },
+                onOpenUtilityDestination: { selectedDetail = .utility($0) }
+            )
+            .navigationSplitViewColumnWidth(min: 320, ideal: 360)
+        } detail: {
+            splitDetailView
+        }
+    }
+
+    @ViewBuilder
+    private var splitDetailView: some View {
+        switch selectedDetail {
+        case .session(let session):
+            ChatView(session: session, server: server, onAPIError: authManager.handleAPIError)
+                .id("session:\(session.id)")
+        case .newChat(let route):
+            PendingNewChatView(
+                initialDraft: route.initialDraft,
+                initialAttachments: route.initialAttachments,
+                autoStartsVoiceInput: route.autoStartsVoiceInput,
+                profileName: route.profileName,
+                server: server,
+                viewModel: SessionListViewModel(server: server),
+                onAPIError: authManager.handleAPIError
+            )
+            .id("new-chat:\(route.id.uuidString)")
+        case .utility(let destination):
+            utilityDetailView(destination)
+        case nil:
+            ContentUnavailableView(
+                "Select a Session",
+                systemImage: "bubble.left.and.bubble.right",
+                description: Text("Choose a conversation from the sidebar.")
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func utilityDetailView(_ destination: SessionListUtilityDestination) -> some View {
+        switch destination {
+        case .settings(let scrollTo):
+            SettingsView(authManager: authManager, server: server, initialScrollTarget: scrollTo)
+        case .tasks:
+            TasksView(server: server, onAPIError: authManager.handleAPIError)
+        case .skills:
+            SkillsView(server: server, onAPIError: authManager.handleAPIError)
+        case .memory:
+            MemoryView(server: server, onAPIError: authManager.handleAPIError)
+        case .insights:
+            InsightsView(server: server, onAPIError: authManager.handleAPIError)
+        case .archived:
+            ArchivedSessionsView(server: server, onAPIError: authManager.handleAPIError)
+        }
+    }
+
+    private func sessionList(
+        onOpenSession: ((SessionSummary) -> Void)? = nil,
+        onOpenNewChat: ((PendingNewChatRoute) -> Void)? = nil,
+        onOpenUtilityDestination: ((SessionListUtilityDestination) -> Void)? = nil
+    ) -> some View {
+        SessionListView(
+            authManager: authManager,
+            server: server,
+            pendingSharedImport: $pendingSharedImport,
+            pendingDeepLinkedSessionID: $pendingDeepLinkedSessionID,
+            requestedNewChat: $requestedNewChat,
+            onOpenSession: onOpenSession,
+            onOpenNewChat: onOpenNewChat,
+            onOpenUtilityDestination: onOpenUtilityDestination
+        )
     }
 }
 

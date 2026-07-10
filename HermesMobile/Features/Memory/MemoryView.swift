@@ -5,12 +5,21 @@ struct MemoryView: View {
     let onAPIError: (Error) -> Void
 
     @State private var viewModel: MemoryViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var editingSection: MemorySection?
 
     init(server: URL, onAPIError: @escaping (Error) -> Void) {
         self.server = server
         self.onAPIError = onAPIError
         _viewModel = State(initialValue: MemoryViewModel(server: server))
+    }
+
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    private var readableContentMaxWidth: CGFloat? {
+        usesExpandedLayout ? 960 : nil
     }
 
     var body: some View {
@@ -100,6 +109,8 @@ struct MemoryView: View {
                     }
                 }
             }
+            .frame(maxWidth: readableContentMaxWidth)
+            .frame(maxWidth: .infinity)
             .refreshable {
                 await loadMemory()
             }

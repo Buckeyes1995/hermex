@@ -12,11 +12,15 @@ struct SessionListView: View {
     @Binding private var pendingSharedImport: SharedImport?
     @Binding private var pendingDeepLinkedSessionID: String?
     @Binding private var requestedNewChat: NewChatRequest?
+    let onOpenSession: ((SessionSummary) -> Void)?
+    let onOpenNewChat: ((PendingNewChatRoute) -> Void)?
+    let onOpenUtilityDestination: ((SessionListUtilityDestination) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var viewModel: SessionListViewModel
     @State private var createdSession: SessionSummary?
     @State private var pendingNewChat: PendingNewChatRoute?
@@ -60,18 +64,28 @@ struct SessionListView: View {
         server: URL,
         pendingSharedImport: Binding<SharedImport?> = .constant(nil),
         pendingDeepLinkedSessionID: Binding<String?> = .constant(nil),
-        requestedNewChat: Binding<NewChatRequest?> = .constant(nil)
+        requestedNewChat: Binding<NewChatRequest?> = .constant(nil),
+        onOpenSession: ((SessionSummary) -> Void)? = nil,
+        onOpenNewChat: ((PendingNewChatRoute) -> Void)? = nil,
+        onOpenUtilityDestination: ((SessionListUtilityDestination) -> Void)? = nil
     ) {
         self.authManager = authManager
         self.server = server
         _pendingSharedImport = pendingSharedImport
         _pendingDeepLinkedSessionID = pendingDeepLinkedSessionID
         _requestedNewChat = requestedNewChat
+        self.onOpenSession = onOpenSession
+        self.onOpenNewChat = onOpenNewChat
+        self.onOpenUtilityDestination = onOpenUtilityDestination
         _viewModel = State(initialValue: SessionListViewModel(server: server))
         _showsCliSessions = AppStorage(
             wrappedValue: SessionRowDisplaySettings.showsCliSessions(for: server),
             SessionRowDisplaySettings.showCliSessionsKey(for: server)
         )
+    }
+
+    private var usesExpandedLayout: Bool {
+        horizontalSizeClass == .regular
     }
 
     var body: some View {
@@ -295,7 +309,7 @@ struct SessionListView: View {
                     projectPendingDeletion: $projectPendingDeletion,
                     projectPendingRename: $projectPendingRename,
                     openDestination: { destination in
-                        selectedUtilityDestination = destination
+                        openUtilityDestination(destination)
                     },
                     switchActiveProfile: { profile in
                         Task { await switchActiveProfile(profile) }
@@ -378,6 +392,8 @@ struct SessionListView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .keyboardShortcut("f", modifiers: .command)
+            .hoverEffect(.highlight)
             .accessibilityLabel(searchChromeIsExpanded ? "Focus session search" : "Search sessions")
             .accessibilityHint("Shows the session search field.")
             .accessibilityHidden(searchChromeIsExpanded)
@@ -389,7 +405,7 @@ struct SessionListView: View {
                     .transition(.scale.combined(with: .opacity))
             }
 
-            searchTrailingButton
+            searchTrailingControls
         }
         .padding(.vertical, 2)
         .frame(maxWidth: searchChromeIsExpanded ? .infinity : nil, alignment: .trailing)
@@ -432,12 +448,24 @@ struct SessionListView: View {
         .accessibilityLabel("Clear search")
     }
 
+    @ViewBuilder
+    private var searchTrailingControls: some View {
+        if usesExpandedLayout && !searchChromeIsExpanded {
+            HStack(spacing: 2) {
+                searchTrailingButton
+                serverSwitcherButton
+            }
+        } else {
+            searchTrailingButton
+        }
+    }
+
     private var searchTrailingButton: some View {
         HapticButton(feedbackStyle: .medium) {
             if searchChromeIsExpanded {
                 closeSearch()
             } else {
-                selectedUtilityDestination = .settings(nil)
+                openUtilityDestination(.settings(nil))
             }
         } label: {
             ZStack {
@@ -463,36 +491,55 @@ struct SessionListView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
         .accessibilityLabel(searchChromeIsExpanded ? "Close search" : "Settings")
         .accessibilityHint(
             searchChromeIsExpanded
                 ? "Closes search and clears the current query."
-                : "Opens Settings. Long press to switch servers."
+                : usesExpandedLayout
+                    ? "Opens Settings."
+                    : "Opens Settings. Long press to switch servers."
         )
-        // Long-press the avatar to switch the active server, reusing #17's
-        // switch/add actions. Suppressed while search is expanded so the
-        // "close search" tap state is untouched (#283). The plain tap above is
-        // preserved — `contextMenu` adds long-press without stealing the tap.
         .contextMenu {
-            if !searchChromeIsExpanded {
-                AvatarServerSwitcherMenu(
-                    model: AvatarServerSwitcherModel(
-                        servers: authManager.servers,
-                        activeServerID: authManager.activeServerID
-                    ),
-                    switchToServer: { account in
-                        authManager.switchActiveServer(to: account)
-                    },
-                    addServer: { isPresentingAddServer = true },
-                    manageServers: { selectedUtilityDestination = .settings(.servers) }
-                )
+            if !searchChromeIsExpanded && !usesExpandedLayout {
+                avatarServerSwitcherMenu
             }
         }
     }
 
+    private var serverSwitcherButton: some View {
+        Menu {
+            avatarServerSwitcherMenu
+        } label: {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: Self.searchChromeIconHitTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .hoverEffect(.highlight)
+        .accessibilityLabel("Server options")
+        .accessibilityHint("Switch servers, add a server, or manage servers.")
+    }
+
+    private var avatarServerSwitcherMenu: some View {
+        AvatarServerSwitcherMenu(
+            model: AvatarServerSwitcherModel(
+                servers: authManager.servers,
+                activeServerID: authManager.activeServerID
+            ),
+            switchToServer: { account in
+                authManager.switchActiveServer(to: account)
+            },
+            addServer: { isPresentingAddServer = true },
+            manageServers: { openUtilityDestination(.settings(.servers)) }
+        )
+    }
+
     private var newSessionButton: some View {
         HapticButton(feedbackStyle: .medium) {
-            pendingNewChat = PendingNewChatRoute()
+            openNewChat(PendingNewChatRoute())
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "square.and.pencil")
@@ -521,6 +568,8 @@ struct SessionListView: View {
             )
         }
         .buttonStyle(SessionListFloatingChatButtonStyle())
+        .keyboardShortcut("n", modifiers: .command)
+        .hoverEffect(.lift)
         .disabled(viewModel.isViewingCachedData || pendingNewChat != nil)
         .opacity(viewModel.isViewingCachedData ? 0.45 : 1)
         .accessibilityLabel("New Session")
@@ -548,6 +597,8 @@ struct SessionListView: View {
                 )
         }
         .buttonStyle(SessionListFloatingChatButtonStyle())
+        .keyboardShortcut("v", modifiers: [.command, .shift])
+        .hoverEffect(.lift)
         .disabled(viewModel.isViewingCachedData)
         .opacity(viewModel.isViewingCachedData ? 0.45 : 1)
         .accessibilityLabel("Voice Session")
@@ -576,7 +627,7 @@ struct SessionListView: View {
 
     private var archivedEntryRow: some View {
         HapticButton {
-            selectedUtilityDestination = .archived
+            openUtilityDestination(.archived)
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "archivebox")
@@ -736,7 +787,7 @@ struct SessionListView: View {
                 Task { await refreshSessionsAndActiveProfile() }
             },
             open: { session in
-                createdSession = session
+                openSession(session)
             },
             togglePinned: { session in
                 Task { await togglePinned(session) }
@@ -766,6 +817,30 @@ struct SessionListView: View {
                 Task { await export(session, format: format) }
             }
         )
+    }
+
+    private func openSession(_ session: SessionSummary) {
+        if let onOpenSession {
+            onOpenSession(session)
+        } else {
+            createdSession = session
+        }
+    }
+
+    private func openNewChat(_ route: PendingNewChatRoute) {
+        if let onOpenNewChat {
+            onOpenNewChat(route)
+        } else {
+            pendingNewChat = route
+        }
+    }
+
+    private func openUtilityDestination(_ destination: SessionListUtilityDestination) {
+        if let onOpenUtilityDestination {
+            onOpenUtilityDestination(destination)
+        } else {
+            selectedUtilityDestination = destination
+        }
     }
 
     private func refreshSessionsAndActiveProfile() async {
@@ -919,7 +994,7 @@ struct SessionListView: View {
         handleLastError()
 
         if let duplicatedSession {
-            createdSession = duplicatedSession
+            openSession(duplicatedSession)
         }
     }
 
@@ -970,10 +1045,10 @@ struct SessionListView: View {
             return
         }
 
-        pendingNewChat = PendingNewChatRoute(
+        openNewChat(PendingNewChatRoute(
             initialDraft: draft,
             initialAttachments: sharedImport.attachments
-        )
+        ))
     }
 
     private func openPendingDeepLinkedSessionIfNeeded() {
@@ -985,13 +1060,13 @@ struct SessionListView: View {
 
         pendingDeepLinkedSessionID = nil
         if let loadedSession = viewModel.sessions.first(where: { $0.sessionId == sessionID }) {
-            createdSession = loadedSession
+            openSession(loadedSession)
             return
         }
 
         Task {
             if let session = await viewModel.loadSessionForDeepLink(id: sessionID, modelContext: modelContext) {
-                createdSession = session
+                openSession(session)
             }
             handleLastError()
         }
@@ -1004,10 +1079,10 @@ struct SessionListView: View {
     private func openRequestedNewChatIfNeeded() {
         guard let request = requestedNewChat else { return }
         requestedNewChat = nil
-        pendingNewChat = PendingNewChatRoute(
+        openNewChat(PendingNewChatRoute(
             autoStartsVoiceInput: request.autoStartsVoiceInput,
             profileName: request.profileName
-        )
+        ))
     }
 
 }
@@ -1065,7 +1140,7 @@ struct NewChatRequest: Equatable {
     }
 }
 
-private struct PendingNewChatRoute: Identifiable, Hashable {
+struct PendingNewChatRoute: Identifiable, Hashable {
     let id = UUID()
     let initialDraft: String
     let initialAttachments: [SharedAttachmentImport]
@@ -1120,7 +1195,7 @@ private struct ActiveSessionMonitorTaskID: Hashable {
     let isViewingCachedData: Bool
 }
 
-private struct PendingNewChatView: View {
+struct PendingNewChatView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage(AppHaptics.isEnabledKey) private var isHapticsEnabled = true
 
