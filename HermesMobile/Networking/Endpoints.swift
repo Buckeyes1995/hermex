@@ -51,7 +51,7 @@ enum Endpoint {
     case directoryList(sessionID: String, path: String?)
     case file(sessionID: String, path: String)
     case rawFile(sessionID: String, path: String)
-    case media(path: String, sessionID: String?)
+    case media(sessionID: String, path: String)
     case gitInfo(sessionID: String)
     case gitStatus(sessionID: String)
     case gitBranches(sessionID: String)
@@ -384,10 +384,11 @@ enum Endpoint {
                 URLQueryItem(name: "session_id", value: sessionID),
                 URLQueryItem(name: "path", value: path)
             ]
-        case let .media(path, sessionID):
-            var items = [URLQueryItem(name: "path", value: path)]
-            if let sessionID { items.append(URLQueryItem(name: "session_id", value: sessionID)) }
-            return items
+        case let .media(sessionID, path):
+            return [
+                URLQueryItem(name: "session_id", value: sessionID),
+                URLQueryItem(name: "path", value: path)
+            ]
         case let .gitInfo(sessionID),
             let .gitStatus(sessionID),
             let .gitBranches(sessionID):

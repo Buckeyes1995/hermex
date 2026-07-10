@@ -296,9 +296,18 @@ private extension SessionSummary {
         activeStreamId = cachedSession.activeStreamId
         isStreaming = cachedSession.isStreaming
         isCliSession = cachedSession.isCliSession
+        userMessageCount = cachedSession.userMessageCount
+        hasPendingUserMessage = cachedSession.hasPendingUserMessage
+        pendingStartedAt = cachedSession.pendingStartedAt
+        worktreePath = cachedSession.worktreePath
         sourceTag = cachedSession.sourceTag
+        rawSource = cachedSession.rawSource
         sessionSource = cachedSession.sessionSource
         sourceLabel = cachedSession.sourceLabel
+        parentSessionId = cachedSession.parentSessionId
+        relationshipType = cachedSession.relationshipType
+        readOnly = cachedSession.readOnly
+        isReadOnly = cachedSession.isReadOnly
         matchType = nil
     }
 }
@@ -311,6 +320,18 @@ private extension ChatMessage {
         } else {
             attachments = nil
         }
+        let toolCalls: [JSONValue]?
+        if let data = cachedMessage.toolCallsData {
+            toolCalls = try? JSONDecoder().decode([JSONValue].self, from: data)
+        } else {
+            toolCalls = nil
+        }
+        let contentParts: [JSONValue]?
+        if let data = cachedMessage.contentPartsData {
+            contentParts = try? JSONDecoder().decode([JSONValue].self, from: data)
+        } else {
+            contentParts = nil
+        }
         self.init(
             role: cachedMessage.role,
             content: cachedMessage.content,
@@ -318,6 +339,9 @@ private extension ChatMessage {
             messageId: cachedMessage.messageId,
             name: cachedMessage.name,
             toolCallId: cachedMessage.toolCallId,
+            toolUseId: cachedMessage.toolUseId,
+            toolCalls: toolCalls,
+            contentParts: contentParts,
             reasoning: cachedMessage.reasoning,
             attachments: attachments
         )

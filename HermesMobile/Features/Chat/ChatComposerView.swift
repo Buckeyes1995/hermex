@@ -109,6 +109,7 @@ struct MessageComposerView: View {
     /// When true, dictation auto-starts once this composer appears with the app active —
     /// the "New Chat with Voice" App Intent (#338). Defaults to false for normal composers.
     let autoStartsVoiceInput: Bool
+    let apiClient: APIClient?
     let uploadAttachmentErrorMessage: String?
     let onSend: () -> Void
     let onSendVoiceNote: (Data, String) -> Void
@@ -155,6 +156,7 @@ struct MessageComposerView: View {
     @State private var voiceNoteRecorder = ComposerVoiceNoteRecorder()
     @State private var voiceNoteCancelArmed = false
     @State private var didAutoStartVoiceInput = false
+    @AppStorage(ComposerSTTProviderPreference.storageKey) private var sttProviderPreferenceRawValue = ComposerSTTProviderPreference.defaultValue.rawValue
 
     private enum DeferredUploadFocusPhase: Equatable {
         case none
@@ -395,7 +397,7 @@ struct MessageComposerView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active {
-                voiceInput.stopKeepingTranscript()
+                voiceInput.stopBeforeSubmittingDraft()
                 // Backgrounding stops the recorder's run-loop ticker, so cancel
                 // the in-flight recording rather than leave it silently stalled.
                 cancelVoiceNote()
@@ -536,7 +538,7 @@ struct MessageComposerView: View {
             keyboardIsVisible = false
         }
         .onDisappear {
-            voiceInput.stopKeepingTranscript()
+            voiceInput.stopBeforeSubmittingDraft()
             cancelVoiceNote()
         }
         .padding(.bottom, keyboardIsVisible ? 10 : 0)
@@ -848,16 +850,21 @@ struct MessageComposerView: View {
     }
 
     private var voiceStatus: ComposerVoiceStatus? {
-        if voiceInput.isListening {
+        switch voiceInput.state {
+        case .listening:
             return ComposerVoiceStatus(text: String(localized: "Listening..."), systemImage: "waveform", isError: false)
-        }
-
-        if voiceInput.isRequestingPermission {
+        case .serverListening:
+            return ComposerVoiceStatus(text: String(localized: "Recording..."), systemImage: "mic.fill", isError: false)
+        case .transcribing:
+            return ComposerVoiceStatus(text: String(localized: "Transcribing..."), systemImage: "waveform", isError: false)
+        case .requestingPermission:
             return ComposerVoiceStatus(
                 text: String(localized: "Requesting voice permissions..."),
                 systemImage: "mic.badge.plus",
                 isError: false
             )
+        case .idle:
+            break
         }
 
         if let errorMessage = voiceInput.errorMessage {
@@ -1048,6 +1055,9 @@ struct MessageComposerView: View {
 
     @MainActor
     private func toggleVoiceInput() {
+        voiceInput.apiClient = apiClient
+        voiceInput.providerPreference = ComposerSTTProviderPreference.storedValue(sttProviderPreferenceRawValue)
+        voiceInput.locale = .current
         Task {
             await voiceInput.toggle(currentDraft: draftMessage) { newDraft in
                 draftMessage = newDraft

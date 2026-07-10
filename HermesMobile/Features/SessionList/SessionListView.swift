@@ -48,6 +48,8 @@ struct SessionListView: View {
     @AppStorage(SessionRowDisplaySettings.showMessageCountKey) private var showsSessionMessageCount = true
     @AppStorage(SessionRowDisplaySettings.showWorkspaceKey) private var showsSessionWorkspace = true
     @AppStorage(SessionRowDisplaySettings.showCronSessionsKey) private var showsCronSessions = true
+    @AppStorage(SessionRowDisplaySettings.showSubagentSessionsKey)
+    private var showsSubagentSessions = SessionRowDisplaySettings.defaultShowsSubagentSessions
     // Per-server key (#19): the CLI toggle mirrors the active server's
     // `show_cli_sessions`, so its cached value must not leak across servers.
     // Configured in `init`, where the server URL is known.
@@ -267,6 +269,11 @@ struct SessionListView: View {
             }
             .onChange(of: requestedNewChat) {
                 openRequestedNewChatIfNeeded()
+            }
+            .onChange(of: pendingNewChat) { _, newValue in
+                if newValue == nil {
+                    viewModel.removeEmptySidebarPlaceholders()
+                }
             }
             .refreshable {
                 await refreshSessionsAndActiveProfile()
@@ -613,7 +620,11 @@ struct SessionListView: View {
     }
 
     private var automatedSessionVisibility: AutomatedSessionVisibility {
-        AutomatedSessionVisibility(showsCron: showsCronSessions, showsCli: showsCliSessions)
+        AutomatedSessionVisibility(
+            showsCron: showsCronSessions,
+            showsCli: showsCliSessions,
+            showsSubagents: showsSubagentSessions
+        )
     }
 
     /// Bottom-of-list entry to the Archived screen (issue #17). Hidden while
@@ -1209,6 +1220,7 @@ struct PendingNewChatView: View {
     @State private var createdSession: SessionSummary?
     @State private var draftMessage = ""
     @State private var didStartCreation = false
+    @State private var didRequestComposerFocus = false
     @State private var creationErrorMessage: String?
     @FocusState private var composerIsFocused: Bool
 
@@ -1246,8 +1258,12 @@ struct PendingNewChatView: View {
                 pendingContent
             }
         }
+        .background(
+            NavigationAppearanceCompletionObserver(action: requestPendingComposerFocus)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        )
         .task {
-            requestPendingComposerFocus()
             await createSessionIfNeeded()
         }
     }
@@ -1279,9 +1295,6 @@ struct PendingNewChatView: View {
         }
         .navigationTitle("New Chat")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            requestPendingComposerFocus()
-        }
     }
 
     private var pendingComposer: some View {
@@ -1366,6 +1379,9 @@ struct PendingNewChatView: View {
     }
 
     private func requestPendingComposerFocus() {
+        guard !didRequestComposerFocus else { return }
+        didRequestComposerFocus = true
+
         Task { @MainActor in
             await Task.yield()
             guard createdSession == nil else { return }

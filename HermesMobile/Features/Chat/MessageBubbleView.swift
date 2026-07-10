@@ -11,6 +11,8 @@ struct MessageBubbleView: View {
     let loadAttachmentImage: ((String) async -> Data?)?
     let loadAttachmentData: ((String) async -> Data?)?
     let loadTranscriptMediaImage: ((TranscriptMediaReference) async -> Data?)?
+    let loadTranscriptMediaData: ((TranscriptMediaReference) async -> Data?)?
+    let transcriptMediaCacheNamespace: String
     let localAttachmentPreviews: [String: Data]?
     let onPreviewAttachment: ((MessageAttachment, Data?) -> Void)?
     let onPreviewTranscriptMedia: ((TranscriptMediaReference) -> Void)?
@@ -21,6 +23,8 @@ struct MessageBubbleView: View {
         loadAttachmentImage: ((String) async -> Data?)? = nil,
         loadAttachmentData: ((String) async -> Data?)? = nil,
         loadTranscriptMediaImage: ((TranscriptMediaReference) async -> Data?)? = nil,
+        loadTranscriptMediaData: ((TranscriptMediaReference) async -> Data?)? = nil,
+        transcriptMediaCacheNamespace: String = "",
         localAttachmentPreviews: [String: Data]? = nil,
         onPreviewAttachment: ((MessageAttachment, Data?) -> Void)? = nil,
         onPreviewTranscriptMedia: ((TranscriptMediaReference) -> Void)? = nil,
@@ -30,6 +34,8 @@ struct MessageBubbleView: View {
         self.loadAttachmentImage = loadAttachmentImage
         self.loadAttachmentData = loadAttachmentData
         self.loadTranscriptMediaImage = loadTranscriptMediaImage
+        self.loadTranscriptMediaData = loadTranscriptMediaData
+        self.transcriptMediaCacheNamespace = transcriptMediaCacheNamespace
         self.localAttachmentPreviews = localAttachmentPreviews
         self.onPreviewAttachment = onPreviewAttachment
         self.onPreviewTranscriptMedia = onPreviewTranscriptMedia
@@ -84,7 +90,9 @@ struct MessageBubbleView: View {
             if segments.containsTranscriptMedia {
                 TranscriptMediaContentView(
                     segments: segments,
+                    cacheNamespace: transcriptMediaCacheNamespace,
                     loadMediaImage: loadTranscriptMediaImage,
+                    loadMediaData: loadTranscriptMediaData,
                     onPreviewMedia: onPreviewTranscriptMedia,
                     isStreaming: isStreaming
                 )

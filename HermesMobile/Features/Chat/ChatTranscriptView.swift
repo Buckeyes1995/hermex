@@ -47,6 +47,8 @@ struct ChatTranscriptView: View {
     let loadAttachmentImage: (String) async -> Data?
     let loadAttachmentData: (String) async -> Data?
     let loadTranscriptMediaImage: (TranscriptMediaReference) async -> Data?
+    let loadTranscriptMediaData: (TranscriptMediaReference) async -> Data?
+    let transcriptMediaCacheNamespace: String
     let actionContext: (ChatMessage, Int) -> MessageActionContext?
     let shouldRenderMessageRow: (ChatMessage) -> Bool
     let onLoadMessages: () async -> Void
@@ -233,6 +235,8 @@ struct ChatTranscriptView: View {
                     loadAttachmentImage: loadAttachmentImage,
                     loadAttachmentData: loadAttachmentData,
                     loadTranscriptMediaImage: loadTranscriptMediaImage,
+                    loadTranscriptMediaData: loadTranscriptMediaData,
+                    transcriptMediaCacheNamespace: transcriptMediaCacheNamespace,
                     actionContext: actionContext,
                     shouldRenderMessageRow: shouldRenderMessageRow,
                     onPreviewAttachment: onPreviewAttachment,
@@ -455,6 +459,8 @@ private struct ChatTranscriptMessageBlock: View, Equatable {
     let loadAttachmentImage: (String) async -> Data?
     let loadAttachmentData: (String) async -> Data?
     let loadTranscriptMediaImage: (TranscriptMediaReference) async -> Data?
+    let loadTranscriptMediaData: (TranscriptMediaReference) async -> Data?
+    let transcriptMediaCacheNamespace: String
     let actionContext: (ChatMessage, Int) -> MessageActionContext?
     let shouldRenderMessageRow: (ChatMessage) -> Bool
     let onPreviewAttachment: (MessageAttachment, Data?) -> Void
@@ -488,7 +494,8 @@ private struct ChatTranscriptMessageBlock: View, Equatable {
             lhs.hasActiveStream == rhs.hasActiveStream &&
             lhs.isRegeneratingMessage == rhs.isRegeneratingMessage &&
             lhs.isEditingMessage == rhs.isEditingMessage &&
-            lhs.isForkingMessage == rhs.isForkingMessage
+            lhs.isForkingMessage == rhs.isForkingMessage &&
+            lhs.transcriptMediaCacheNamespace == rhs.transcriptMediaCacheNamespace
     }
 
     var body: some View {
@@ -519,6 +526,8 @@ private struct ChatTranscriptMessageBlock: View, Equatable {
                     loadAttachmentImage: loadAttachmentImage,
                     loadAttachmentData: loadAttachmentData,
                     loadTranscriptMediaImage: loadTranscriptMediaImage,
+                    loadTranscriptMediaData: loadTranscriptMediaData,
+                    transcriptMediaCacheNamespace: transcriptMediaCacheNamespace,
                     onPreviewAttachment: onPreviewAttachment,
                     onPreviewTranscriptMedia: onPreviewTranscriptMedia,
                     onToggleListening: onToggleListening,
@@ -599,6 +608,8 @@ private struct ChatTranscriptMessageRow: View {
     let loadAttachmentImage: (String) async -> Data?
     let loadAttachmentData: (String) async -> Data?
     let loadTranscriptMediaImage: (TranscriptMediaReference) async -> Data?
+    let loadTranscriptMediaData: (TranscriptMediaReference) async -> Data?
+    let transcriptMediaCacheNamespace: String
     let onPreviewAttachment: (MessageAttachment, Data?) -> Void
     let onPreviewTranscriptMedia: (TranscriptMediaReference) -> Void
     let onToggleListening: (MessageActionContext) -> Void
@@ -644,6 +655,8 @@ private struct ChatTranscriptMessageRow: View {
             loadAttachmentImage: loadAttachmentImage,
             loadAttachmentData: loadAttachmentData,
             loadTranscriptMediaImage: loadTranscriptMediaImage,
+            loadTranscriptMediaData: loadTranscriptMediaData,
+            transcriptMediaCacheNamespace: transcriptMediaCacheNamespace,
             localAttachmentPreviews: localAttachmentPreviews,
             onPreviewAttachment: onPreviewAttachment,
             onPreviewTranscriptMedia: onPreviewTranscriptMedia,

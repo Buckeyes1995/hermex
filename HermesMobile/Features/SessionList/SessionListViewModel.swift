@@ -175,7 +175,8 @@ final class SessionListViewModel {
 
         do {
             let response = try await client.sessions()
-            let visibleSessions = (response.sessions ?? []).filter { $0.archived != true }
+            let visibleSessions = (response.sessions ?? [])
+                .filter { $0.archived != true && $0.shouldAppearInSessionList }
             applySessions(visibleSessions, archivedCount: response.archivedCount, animation: animation)
             isViewingCachedData = false
 
@@ -196,6 +197,7 @@ final class SessionListViewModel {
             if CacheFallbackPolicy.shouldUseCache(for: error), let modelContext {
                 do {
                     let cachedSessions = try CacheStore.cachedSessions(serverURL: server, in: modelContext)
+                        .filter(\.shouldAppearInSessionList)
                     if !cachedSessions.isEmpty {
                         sessions = cachedSessions
                         isViewingCachedData = true
@@ -402,11 +404,13 @@ final class SessionListViewModel {
             }
 
             let session = SessionSummary(from: sessionDetail)
-            if session.archived != true, !sessions.contains(where: { $0.sessionId == session.sessionId }) {
+            if session.archived != true,
+               session.shouldAppearInSessionList,
+               !sessions.contains(where: { $0.sessionId == session.sessionId }) {
                 sessions.insert(session, at: 0)
             }
 
-            if let modelContext {
+            if let modelContext, session.shouldAppearInSessionList {
                 do {
                     try CacheStore.cacheSession(session, serverURL: server, in: modelContext)
                 } catch {
@@ -854,17 +858,19 @@ final class SessionListViewModel {
                 return nil
             }
 
-            if let existingIndex = sessions.firstIndex(where: { $0.sessionId == newSession.sessionId }) {
-                sessions[existingIndex] = newSession
-            } else {
-                sessions.insert(newSession, at: 0)
-            }
+            if newSession.shouldAppearInSessionList {
+                if let existingIndex = sessions.firstIndex(where: { $0.sessionId == newSession.sessionId }) {
+                    sessions[existingIndex] = newSession
+                } else {
+                    sessions.insert(newSession, at: 0)
+                }
 
-            if let modelContext {
-                do {
-                    try CacheStore.cacheSession(newSession, serverURL: server, in: modelContext)
-                } catch {
-                    cacheErrorMessage = error.localizedDescription
+                if let modelContext {
+                    do {
+                        try CacheStore.cacheSession(newSession, serverURL: server, in: modelContext)
+                    } catch {
+                        cacheErrorMessage = error.localizedDescription
+                    }
                 }
             }
 
@@ -880,6 +886,15 @@ final class SessionListViewModel {
 
     func clearActionError() {
         actionErrorMessage = nil
+    }
+
+    /// Drops any empty Untitled placeholders still held in memory. Used when
+    /// returning from the pending new-chat flow so stale rows cannot flash during
+    /// the navigation pop animation.
+    func removeEmptySidebarPlaceholders() {
+        let filtered = sessions.filter(\.shouldAppearInSessionList)
+        guard filtered.count != sessions.count else { return }
+        sessions = filtered
     }
 
     private static func normalizedSearchQuery(_ value: String) -> String {
